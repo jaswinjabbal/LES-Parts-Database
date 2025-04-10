@@ -1,0 +1,14 @@
+{% extends "layout.html" %}
+{% block title %}Add Part via Digikey{% endblock %}
+{% block content %}
+<h2 class="mb-4">Add a Part via Digikey API</h2>
+<form method="POST" class="row g-3">
+    <div class="col-md-8">
+        <label class="form-label">Supplier Part Number (DigiKey)</label>
+        <input type="text" class="form-control" name="part_number" required>
+    </div>
+    <div class="col-12">
+        <button type="submit" class="btn btn-success">Fetch & Add Part</button>
+    </div>
+</form>
+{% endblock %}

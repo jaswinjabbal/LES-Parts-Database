@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Delete Parts</h2>
+    <form method="POST" class="card p-4 shadow-sm rounded">
+        <div class="mb-3">
+            <label for="category" class="form-label">Select Category</label>
+            <select name="category" class="form-select" required>
+                <option value="" disabled selected>Select category</option>
+                <option value="Manufacturer">Manufacturer</option>
+                <option value="Supplier 1">Supplier</option>
+                <option value="Part Category">Part Category</option>
+                <option value="Supplier Part Number 1">Supplier Part Number</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="value" class="form-label">Enter Value to Delete</label>
+            <input type="text" name="value" class="form-control" placeholder="Enter value" required>
+        </div>
+        <button type="submit" class="btn btn-danger">Delete Part(s)</button>
+    </form>
+
+    <a href="{{ url_for('index') }}" class="btn btn-secondary mt-3">Back to Home</a>
+</div>
+{% endblock %}

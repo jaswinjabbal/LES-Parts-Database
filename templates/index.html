@@ -1,0 +1,32 @@
+{% extends "layout.html" %}
+{% block title %}Home - Parts Catalog{% endblock %}
+{% block content %}
+<h2 class="mb-4">Parts Catalog</h2>
+{% if data %}
+<div class="table-responsive">
+    <table class="table table-bordered table-striped">
+        <thead class="table-dark">
+            <tr>{% for header in data[0].keys() %}<th>{{ header }}</th>{% endfor %}</tr>
+        </thead>
+        <tbody>
+            {% for row in data %}
+            <tr>{% for value in row.values() %}<td>{{ value }}</td>{% endfor %}</tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<nav aria-label="Page navigation">
+  <ul class="pagination justify-content-center">
+    {% if page > 1 %}
+    <li class="page-item"><a class="page-link" href="{{ url_for('index', page=page-1) }}">Previous</a></li>
+    {% endif %}
+    <li class="page-item disabled"><span class="page-link">Page {{ page }}</span></li>
+    {% if has_next %}
+    <li class="page-item"><a class="page-link" href="{{ url_for('index', page=page+1) }}">Next</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% else %}
+<p>No data available.</p>
+{% endif %}
+{% endblock %}

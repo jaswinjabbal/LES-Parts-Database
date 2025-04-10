@@ -1,0 +1,24 @@
+
+{% extends "layout.html" %}
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Add Digikey Part Number</h2>
+    <form method="POST" class="card p-4 shadow-sm rounded mb-4">
+        <div class="mb-3">
+            <label for="part_number" class="form-label">Part Number</label>
+            <input type="text" name="part_number" class="form-control" placeholder="Enter part number" required>
+        </div>
+        <!--<div class="mb-3">
+            <label for="supplier" class="form-label">Select Supplier</label>
+            <select name="supplier" class="form-select" required>
+                <option value="" disabled selected>Select supplier</option>
+                <option value="Digikey">Digikey</option>
+                <option value="Mouser">Mouser</option>
+            </select>
+        </div>
+    --> 
+        <button type="submit" class="btn btn-primary">Add Part</button>
+    </form>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary mt-3">Back to Home</a>
+</div>
+{% endblock %}

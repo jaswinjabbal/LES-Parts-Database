@@ -1,0 +1,77 @@
+{% extends "layout.html" %}
+{% block title %}Search Parts{% endblock %}
+{% block content %}
+<h2 class="mb-4">Search Parts</h2>
+<form method="POST" class="row g-3">
+    <div class="col-md-6">
+      <label class="form-label">Select Category</label>
+      <select class="form-select" id="category-select" name="category" required>
+          <option value="" disabled selected>Select category</option>
+          <option value="Manufacturer">Manufacturer</option>
+          <option value="Supplier">Supplier</option>
+          <option value="Part_Category">Part Category</option>
+          <option value="Stock">Stock</option>
+      </select>
+    </div>
+  
+    <div class="col-md-6">
+      <label class="form-label">Select Value</label>
+      <select class="form-select" id="value-select" name="value" required>
+          <option value="" disabled selected>Select value</option>
+      </select>
+    </div>
+  
+    <div class="col-12">
+      <button type="submit" class="btn btn-primary">Search</button>
+    </div>
+</form>
+
+<!-- JQuery CDN -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+  $('#category-select').on('change', function() {
+      var selectedCategory = $(this).val();
+      $.post("/get_values", { category: selectedCategory }, function(response) {
+          let values = response.values;
+          $('#value-select').empty();
+          $('#value-select').append('<option value="" disabled selected>Select value</option>');
+          for (let val of values) {
+              $('#value-select').append('<option value="' + val + '">' + val + '</option>');
+          }
+      });
+  });
+</script>
+
+
+{% if results %}
+  <h3>Search Results:</h3>
+  <table class="table table-bordered table-striped">
+    <thead>
+      <tr>
+        {% for header in results[0].keys() %}
+          <th>{{ header }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in results %}
+        <tr>
+          {% for value in row.values() %}
+            <td>{{ value }}</td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="d-flex justify-content-between mt-3">
+    {% if page > 1 %}
+      <a href="{{ url_for('search', page=page-1, category=selected_category, value=search_value) }}" class="btn btn-secondary">Previous</a>
+    {% endif %}
+    {% if has_next %}
+      <a href="{{ url_for('search', page=page+1, category=selected_category, value=search_value) }}" class="btn btn-secondary">Next</a>
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">User Profile</h2>
+    <div class="card p-4 shadow-sm">
+        <p><strong>Username:</strong> {{ current_user.username }}</p>
+        <p><strong>Role:</strong> {{ session.get('user_type', 'N/A')|capitalize }}</p>
+    </div>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary mt-3">Back to Home</a>
+</div>
+{% endblock %}

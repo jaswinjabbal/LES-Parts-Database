@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+{% block title %}Tag Part{% endblock %}
+{% block content %}
+<h2 class="mb-4">Tag a Part</h2>
+<form method="POST" class="row g-3">
+    <div class="col-md-6">
+        <label class="form-label">Part Number (existing)</label>
+        <input type="text" class="form-control" name="part_number" required>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">Tag</label>
+        <input type="text" class="form-control" name="tag" required>
+    </div>
+    <div class="col-12">
+        <button type="submit" class="btn btn-primary">Add Tag</button>
+    </div>
+</form>
+{% endblock %}

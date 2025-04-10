@@ -1,0 +1,65 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Filter Parts</h2>
+    <form method="POST" class="card p-4 shadow-sm rounded">
+        <div class="mb-3">
+            <label for="category" class="form-label">Select Category:</label>
+            <select name="category" class="form-select" required>
+                <option value="" disabled selected>Select a category</option>
+                {% for col in columns %}
+                    <option value="{{ col }}" {% if selected_category == col %}selected{% endif %}>{{ col }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="value" class="form-label">Enter Value:</label>
+            <input type="text" name="value" class="form-control" placeholder="Enter value" value="{{ selected_value }}" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Apply Filter</button>
+    </form>
+    <br>
+
+    {% if data and data|length > 0 %}
+    <h3 class="mt-4">Filtered Results</h3>
+    <table class="table table-striped table-bordered mt-3">
+        <thead>
+            <tr>
+                {% for header in columns %}
+                    <th>{{ header }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in data %}
+                <tr>
+                    {% for value in row %}
+                        <td>{{ value }}</td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>        
+    </table>
+    {% if has_next or page > 1 %}
+        <nav aria-label="Pagination">
+            <ul class="pagination justify-content-center">
+                {% if page > 1 %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('filter', page=page-1, category=selected_category, value=selected_value) }}">Previous</a>
+                    </li>
+                {% endif %}
+                {% if has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('filter', page=page+1, category=selected_category, value=selected_value) }}">Next</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+    {% elif data is not none %}
+    <p class="text-muted">No matching records found.</p>
+    {% endif %}
+
+    <a href="{{ url_for('index') }}" class="btn btn-secondary mt-3">Back to Home</a>
+</div>
+{% endblock %}
