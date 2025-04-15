@@ -22,17 +22,18 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-def create_db_connection():
-    tunnel = SSHTunnelForwarder(
+
+tunnel = SSHTunnelForwarder(
         ssh_address_or_host=('lusherengineeringservices.com', 22),
         ssh_username='ecen404team45',
         ssh_password='ecen404$592H#!cx',
         remote_bind_address=('127.0.0.1', 3306),
         local_bind_address=('127.0.0.1', 3307)
     )
-    tunnel.start()
+tunnel.start()
 
-    conn = mysql.connector.connect(
+def create_db_connection():
+    return mysql.connector.connect(
         host='127.0.0.1',
         port=3307,
         user='ecen404team45',
@@ -40,21 +41,18 @@ def create_db_connection():
         database='lusher engineering parts database'
     )
 
-    return conn, tunnel
-
-def cleanup(cursor, conn, tunnel):
+def cleanup(cursor, conn):
     if cursor: cursor.close()
     if conn: conn.close()
-    if tunnel: tunnel.stop()
 
 #------------------USERS TABLE------------------#
 @login_manager.user_loader
 def load_user(user_id):
-    conn, tunnel = create_db_connection()
+    conn = create_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT id, username, password_hash FROM users WHERE id = %s", (user_id,))
     row = cursor.fetchone()
-    cleanup(cursor, conn, tunnel)
+    cleanup(cursor, conn)
     if row:
         return User(id=row[0], username=row[1], password_hash=row[2])
     return None
@@ -66,7 +64,7 @@ def register():
         password = request.form['password']
         hashed_pw = generate_password_hash(password)
 
-        conn, tunnel = create_db_connection()
+        conn = create_db_connection()
         cursor = conn.cursor()
         try:
             cursor.execute("INSERT INTO users (username, password_hash) VALUES (%s, %s)", (username, hashed_pw))
@@ -76,7 +74,7 @@ def register():
         except mysql.connector.IntegrityError:
             flash('Username already exists. Choose another.')
         finally:
-            cleanup(cursor, conn, tunnel)
+            cleanup(cursor, conn)
     return render_template('register.html')
 
 from flask import session
@@ -89,11 +87,11 @@ def login():
         selected_user_type = request.form['user_type']  # Dropdown selection
 
         # Authenticate with DB
-        conn, tunnel = create_db_connection()
+        conn = create_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT id, username, password_hash FROM users WHERE username = %s", (username,))
         user_data = cursor.fetchone()
-        cleanup(cursor, conn, tunnel)
+        cleanup(cursor, conn)
 
         if user_data and check_password_hash(user_data[2], password):
             user = User(user_data[0], user_data[1], user_data[2])
@@ -126,7 +124,7 @@ def index():
     per_page = 10
     offset = (page - 1) * per_page
 
-    conn, tunnel = create_db_connection()
+    conn = create_db_connection()
     cursor = conn.cursor(dictionary=True)
 
     cursor.execute("SELECT COUNT(*) as total FROM electronics_parts")
@@ -137,7 +135,7 @@ def index():
 
     has_next = (offset + per_page) < total_parts
 
-    cleanup(cursor, conn, tunnel)
+    cleanup(cursor, conn)
     return render_template('index.html', data=data, page=page, has_next=has_next)
 
 #filter works
