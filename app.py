@@ -1,10 +1,9 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 import mysql.connector
 import os
-import json
+from dotenv import load_dotenv
 from sshtunnel import SSHTunnelForwarder
-import random
-import string
+
 import logging
 logging.basicConfig(level=logging.DEBUG)
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
@@ -14,9 +13,10 @@ from werkzeug.security import check_password_hash, generate_password_hash
 #INTEGRATION
 from utils.query_helpers_api import filter_parts, sort_parts, tag_part, add_part, update_part, delete_part
 
+load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key_here_1234567890'
+app.secret_key = os.getenv("SECRET_KEY")
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -24,10 +24,10 @@ login_manager.login_view = 'login'
 
 
 tunnel = SSHTunnelForwarder(
-        ssh_address_or_host=('lusherengineeringservices.com', 22),
-        ssh_username='ecen404team45',
-        ssh_password='ecen404$592H#!cx',
-        remote_bind_address=('127.0.0.1', 3306),
+        ssh_address_or_host=(os.getenv("SSH_HOST"), int(os.getenv("SSH_PORT"))),
+        ssh_username=os.getenv("DB_USER"),
+        ssh_password=os.getenv("DB_PASS"),
+        remote_bind_address=('127.0.0.1', int(os.getenv("DB_PORT"))),
         local_bind_address=('127.0.0.1', 3307)
     )
 tunnel.start()
@@ -36,9 +36,9 @@ def create_db_connection():
     return mysql.connector.connect(
         host='127.0.0.1',
         port=3307,
-        user='ecen404team45',
-        password='ecen404$592H#!cx',
-        database='lusher engineering parts database'
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASS"),
+        database=os.getenv("DB_NAME")
     )
 
 def cleanup(cursor, conn):
