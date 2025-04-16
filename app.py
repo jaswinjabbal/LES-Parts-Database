@@ -1,3 +1,9 @@
+#---let's keep this app running :)---#
+@app.route('/ping')
+def ping():
+    return "pong", 200
+#------------------------------------#
+
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 import mysql.connector
 import os
