@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 API_BASE_URL = "https://ssh-integration.vercel.app"
-BEARER_TOKEN = "w73IXAcg9Dn3ROMlV68stJZZ"
+BEARER_TOKEN = os.getenv("BEARER_TOKEN")
 
 HEADERS = {
     "Authorization": f"Bearer {BEARER_TOKEN}"
