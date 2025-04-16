@@ -1,9 +1,3 @@
-#---let's keep this app running :)---#
-@app.route('/ping')
-def ping():
-    return "pong", 200
-#------------------------------------#
-
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 import mysql.connector
 import os
@@ -23,7 +17,11 @@ load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY")
-
+#---let's keep this app running :)---#
+@app.route('/ping')
+def ping():
+    return "pong", 200
+#------------------------------------#
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
