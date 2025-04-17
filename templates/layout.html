@@ -116,7 +116,9 @@
                 <ul class="navbar-nav">
                     {% if current_user.is_authenticated %}
                         <li class="nav-item">
-                            <span class="navbar-text me-3">Logged in as {{ current_user.username|title }} ({{ session['user_type']|title }})</span>
+                            <a class="nav-link disabled" tabindex="-1" aria-disabled="true">
+                                Logged in as {{ current_user.username|title }} ({{ session['user_type']|title }})
+                            </a>
                         </li>
                         <li class="nav-item"><a class="nav-link" href="{{ url_for('profile') }}">Profile</a></li>
                         <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">Logout</a></li>
