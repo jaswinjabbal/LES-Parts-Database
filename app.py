@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 import mysql.connector
 import os
 from dotenv import load_dotenv
@@ -6,7 +6,7 @@ from sshtunnel import SSHTunnelForwarder
 
 import logging
 logging.basicConfig(level=logging.DEBUG)
-from flask_login import LoginManager, login_user, login_required, logout_user, current_user
+from flask_login import LoginManager, login_user, login_required, logout_user
 from utils.models import User 
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -17,29 +17,25 @@ load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY")
-#---let's keep this app running :)---#
-@app.route('/ping')
-def ping():
-    return "pong", 200
-#------------------------------------#
+
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-
+#------------------SSH SETUP------------------#
 tunnel = SSHTunnelForwarder(
         ssh_address_or_host=(os.getenv("SSH_HOST"), int(os.getenv("SSH_PORT"))),
         ssh_username=os.getenv("DB_USER"),
         ssh_password=os.getenv("DB_PASS"),
         remote_bind_address=('127.0.0.1', int(os.getenv("DB_PORT"))),
-        local_bind_address=('127.0.0.1', 3307)
+        local_bind_address=('127.0.0.1', int(os.getenv("LOCAL_PORT")))
     )
 tunnel.start()
 
 def create_db_connection():
     return mysql.connector.connect(
         host='127.0.0.1',
-        port=3307,
+        port=int(os.getenv("LOCAL_PORT")),
         user=os.getenv("DB_USER"),
         password=os.getenv("DB_PASS"),
         database=os.getenv("DB_NAME")
@@ -66,12 +62,16 @@ def register():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
+        user_type = request.form['user_type']  # VERIFY WITH DB
         hashed_pw = generate_password_hash(password)
 
         conn = create_db_connection()
         cursor = conn.cursor()
         try:
-            cursor.execute("INSERT INTO users (username, password_hash) VALUES (%s, %s)", (username, hashed_pw))
+            cursor.execute(
+                "INSERT INTO users (username, password_hash, user_type) VALUES (%s, %s, %s)",
+                (username, hashed_pw, user_type)
+            )
             conn.commit()
             flash('Registration successful! Please login.')
             return redirect(url_for('login'))
@@ -88,21 +88,17 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        selected_user_type = request.form['user_type']  # Dropdown selection
 
-        # Authenticate with DB
         conn = create_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT id, username, password_hash FROM users WHERE username = %s", (username,))
+        cursor.execute("SELECT id, username, password_hash, user_type FROM users WHERE username = %s", (username,))
         user_data = cursor.fetchone()
         cleanup(cursor, conn)
 
         if user_data and check_password_hash(user_data[2], password):
             user = User(user_data[0], user_data[1], user_data[2])
             login_user(user)
-
-            # Use dropdown selection (demo purpose) instead of DB user_type
-            session['user_type'] = selected_user_type  # 'admin' or 'user' from dropdown
+            session['user_type'] = user_data[3]  #CHECKS 3RD COLUMN
             return redirect(url_for('index'))
 
         flash('Invalid credentials')
@@ -125,7 +121,7 @@ def logout():
 @login_required
 def index():
     page = request.args.get('page', 1, type=int)
-    per_page = 10
+    per_page = 20
     offset = (page - 1) * per_page
 
     conn = create_db_connection()
@@ -142,7 +138,7 @@ def index():
     cleanup(cursor, conn)
     return render_template('index.html', data=data, page=page, has_next=has_next)
 
-#filter works
+#FILTER
 @app.route('/filter', methods=['GET', 'POST'])
 @login_required
 def filter():
@@ -172,7 +168,7 @@ def filter():
 
     return render_template("filter.html", data=data, columns=columns, selected_category=selected_category, selected_value=selected_value, page=page, has_next=has_next)
 
-#sort works
+#SORT
 @app.route('/sort', methods=['GET', 'POST'])
 @login_required
 def sort():
@@ -201,7 +197,7 @@ def sort():
 
     return render_template('sort.html', data=data, page=page, has_next=has_next, selected_category=selected_category, columns=["Manufacturer", "Supplier", "Part_Category", "Cost_1pc", "Stock"])
 
-#need to test tag
+#TAG
 @app.route('/tag', methods=['GET', 'POST'])
 @login_required
 def tag():
@@ -216,7 +212,7 @@ def tag():
         return redirect(url_for('tag'))
     return render_template('tag_part.html')
 
-#add works
+#ADD
 @app.route('/add', methods=['GET', 'POST'])
 @login_required
 def add():
@@ -237,7 +233,7 @@ def add():
         return redirect(url_for('add'))
     return render_template('add_part.html')
 
-#update works
+#UPDATE
 @app.route('/update', methods=['GET', 'POST'])
 @login_required
 def update():
@@ -257,7 +253,7 @@ def update():
 
     return render_template('update.html')
 
-#need to test delete
+#DELETE
 @app.route('/delete', methods=['GET', 'POST'])
 @login_required
 def delete():
@@ -272,6 +268,6 @@ def delete():
         return redirect(url_for('delete'))
     return render_template('delete.html')
 
-#-----------------------RUN APP--------------------#
+#------------------RUN APP------------------#
 if __name__ == '__main__':
     app.run(debug=True)
