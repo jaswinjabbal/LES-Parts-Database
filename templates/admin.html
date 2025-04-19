@@ -1,0 +1,46 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Admin Panel: User List</h2>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-bordered">
+            <thead class="table-primary sticky-top">
+                <tr>
+                    <th>ID</th>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                    <tr>
+                        <td>{{ user.id }}</td>
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.user_type }}</td>
+                        <td>
+                            {% if user.id != current_user_id %}
+                                <form method="POST" action="{{ url_for('delete_user', user_id=user.id) }}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this user?');">
+                                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                </form>
+                                {% if user.user_type == 'user' %}
+                                    <form method="POST" action="{{ url_for('promote_user', user_id=user.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-success">Promote to Admin</button>
+                                    </form>
+                                {% elif user.user_type == 'admin' %}
+                                    <form method="POST" action="{{ url_for('demote_user', user_id=user.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-warning">Demote to User</button>
+                                    </form>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">Self</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
