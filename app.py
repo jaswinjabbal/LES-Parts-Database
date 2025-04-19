@@ -6,7 +6,7 @@ from sshtunnel import SSHTunnelForwarder
 
 import logging
 logging.basicConfig(level=logging.DEBUG)
-from flask_login import LoginManager, login_user, login_required, logout_user
+from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from utils.models import User 
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -118,9 +118,87 @@ def profile():
 def logout():
     logout_user()
     return redirect(url_for('login'))
+#----------------ADMIN ONLY----------------#
+@app.route('/admin')
+@login_required
+def admin():
+    if session.get('user_type') != 'admin':
+        flash("Access denied: Admins only.")
+        return redirect(url_for('index'))
 
-#----------------------- CRUD ROUTES--------------------#
-#home page is currently a paginated dump of parts
+    conn = create_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT id, username, user_type FROM users")
+    users = cursor.fetchall()
+    cleanup(cursor, conn)
+
+    return render_template('admin.html', users=users, current_user_id=current_user.id)
+
+@app.route('/admin/promote_user/<int:user_id>', methods=['POST'])
+@login_required
+def promote_user(user_id):
+    if session.get('user_type') != 'admin':
+        flash("Access denied: Admins only.")
+        return redirect(url_for('index'))
+
+    conn = create_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("UPDATE users SET user_type = 'admin' WHERE id = %s", (user_id,))
+        conn.commit()
+        flash('User promoted to admin successfully.')
+    except Exception as e:
+        flash(f"Error promoting user: {e}")
+    finally:
+        cleanup(cursor, conn)
+
+    return redirect(url_for('admin'))
+
+@app.route('/admin/demote_user/<int:user_id>', methods=['POST'])
+@login_required
+def demote_user(user_id):
+    if session.get('user_type') != 'admin':
+        flash("Access denied: Admins only.")
+        return redirect(url_for('index'))
+
+    conn = create_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("UPDATE users SET user_type = 'user' WHERE id = %s", (user_id,))
+        conn.commit()
+        flash('User demoted to user successfully.')
+    except Exception as e:
+        flash(f"Error demoting user: {e}")
+    finally:
+        cleanup(cursor, conn)
+
+    return redirect(url_for('admin'))
+
+@app.route('/admin/delete_user/<int:user_id>', methods=['POST'])
+@login_required
+def delete_user(user_id):
+    if session.get('user_type') != 'admin':
+        flash("Access denied: Admins only.")
+        return redirect(url_for('index'))
+
+    conn = create_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
+        conn.commit()
+        flash('User deleted successfully.')
+    except Exception as e:
+        flash(f"Error deleting user: {e}")
+    finally:
+        cleanup(cursor, conn)
+
+    return redirect(url_for('admin'))
+
+#--------------------CRUD ROUTES--------------------#
+# Home page is a latest paginated dump of parts
 @app.route('/')
 @login_required
 def index():
@@ -147,14 +225,53 @@ def index():
 @login_required
 def filter():
     page = request.args.get('page', 1, type=int)
-    per_page = 10
+    per_page = 20
     offset = (page - 1) * per_page
     selected_category = request.args.get('category')
     selected_value = request.args.get('value')
 
     data = []
     has_next = False
-    columns = ['Manufacturer', 'Supplier 1', 'Part Category', 'RoHS Compliant']  # Or fetch dynamically if needed
+    total = 0
+    columns = [
+    "ID",
+    "Internal PN",
+    "Part Description",
+    "Manufacturer",
+    "Manufacturer Part Number",
+    "Supplier 1",
+    "Supplier Part Number 1",
+    "Part Category",
+    "Updated",
+    "Reason",
+    "RoHS Compliant",
+    "Part Verified",
+    "Cost 1pc",
+    "Cost 100pc",
+    "Cost 1000pc",
+    "Tags",
+    "Notes",
+    "Library Ref",
+    "Library Path",
+    "Footprint",
+    "Footprint Ref",
+    "Footprint Path",
+    "Datasheet Document",
+    "Primary Vendor Stock",
+    "Simulation",
+    "Value",
+    "ComponentLink1URL",
+    "ComponentLink1Description",
+    "ComponentLink2URL",
+    "ComponentLink2Description",
+    "Current Inventory",
+    "Signal Integrity",
+    "Location",
+    "Auto Update",
+    "Verified By",
+    "Parameters",
+    "Project List"
+    ]
 
     if request.method == 'POST':
         selected_category = request.form['category']
@@ -170,14 +287,14 @@ def filter():
         except Exception as e:
             flash(f"Error during filtering: {e}")
 
-    return render_template("filter.html", data=data, columns=columns, selected_category=selected_category, selected_value=selected_value, page=page, has_next=has_next)
+    return render_template("filter.html", data=data, columns=columns, selected_category=selected_category, selected_value=selected_value, page=page, has_next=has_next, total=total)
 
 #SORT
 @app.route('/sort', methods=['GET', 'POST'])
 @login_required
 def sort():
     page = request.args.get('page', 1, type=int)
-    per_page = 10
+    per_page = 20
     offset = (page - 1) * per_page
 
     category = request.args.get('category')
