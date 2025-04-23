@@ -105,10 +105,13 @@
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('add') }}">Add</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('update') }}">Update</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('delete') }}">Delete</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('manual_add') }}">Manual Add</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('manual_edit_selector') }}">Manual Edit</a></li>
                         {% endif %}
                         <li class="nav-item"><a class="nav-link" href="{{ url_for('filter') }}">Filter</a></li>
                         <li class="nav-item"><a class="nav-link" href="{{ url_for('sort') }}">Sort</a></li>
                         <li class="nav-item"><a class="nav-link" href="{{ url_for('tag') }}">Tag</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('part_lookup') }}">Search</a></li>
                     {% endif %}
 
                 </ul>
