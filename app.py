@@ -92,7 +92,7 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-
+        
         conn = create_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT id, username, password_hash, user_type FROM users WHERE username = %s", (username,))
@@ -197,6 +197,41 @@ def delete_user(user_id):
 
     return redirect(url_for('admin'))
 
+@app.route('/reset_password/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+def reset_password(user_id):
+    if session.get('user_type') != 'admin':
+        flash("Access denied: Admins only.")
+        return redirect(url_for('index'))
+
+    conn = create_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    if request.method == 'POST':
+        new_password = request.form.get('new_password')
+        hashed_pw = generate_password_hash(new_password)
+
+        try:
+            cursor.execute("UPDATE users SET password_hash = %s WHERE id = %s", (hashed_pw, user_id))
+            conn.commit()
+            flash("Password reset successfully.")
+            return redirect(url_for('admin'))
+        except Exception as e:
+            flash(f"Error resetting password: {e}")
+        finally:
+            cleanup(cursor, conn)
+
+    else:
+        cursor.execute("SELECT username FROM users WHERE id = %s", (user_id,))
+        user = cursor.fetchone()
+        cleanup(cursor, conn)
+
+        if not user:
+            flash("User not found.")
+            return redirect(url_for('admin'))
+
+        return render_template("reset_password.html", user=user)
+
 #--------------------CRUD ROUTES--------------------#
 # Home page is a latest paginated dump of parts
 @app.route('/')
@@ -219,6 +254,33 @@ def index():
 
     cleanup(cursor, conn)
     return render_template('index.html', data=data, page=page, has_next=has_next)
+
+#PART LOOKUP/SEARCH
+@app.route('/part_lookup', methods=['GET', 'POST'])
+@login_required
+def part_lookup():
+    part = None
+    if request.method == 'POST':
+        search_term = request.form.get('search_term')
+
+        conn = create_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        try:
+            cursor.execute("""
+                SELECT * FROM electronics_parts
+                WHERE `Internal PN` = %s
+                   OR `Manufacturer Part Number` = %s
+                   OR `Part Description` = %s
+                LIMIT 1
+            """, (search_term, search_term, search_term))
+            part = cursor.fetchone()
+        except Exception as e:
+            flash(f"Error during lookup: {e}")
+        finally:
+            cleanup(cursor, conn)
+
+    return render_template('part_lookup.html', part=part)
 
 #FILTER
 @app.route('/filter', methods=['GET', 'POST'])
@@ -353,6 +415,194 @@ def add():
             flash(f"Error during API call: {e}")
         return redirect(url_for('add'))
     return render_template('add_part.html')
+
+#MANUAL ADD
+@app.route('/manual_add', methods=['GET', 'POST'])
+@login_required
+def manual_add():
+    if session.get('user_type') != 'admin':
+        flash("Access denied: Admins only.")
+        return redirect(url_for('index'))
+
+    if request.method == 'POST':
+        form_data = {
+            'Internal PN': request.form.get('internal_pn'),
+            'Part Description': request.form.get('part_description'),
+            'Manufacturer': request.form.get('manufacturer'),
+            'Manufacturer Part Number': request.form.get('manufacturer_pn'),
+            'Supplier 1': request.form.get('supplier_1'),
+            'Supplier Part Number 1': request.form.get('supplier_pn_1'),
+            'Part Category': request.form.get('part_category'),
+            'Updated': request.form.get('updated'),
+            'Reason': request.form.get('reason'),
+            'RoHS Compliant': request.form.get('rohs_compliant'),
+            'Part Verified': request.form.get('part_verified'),
+            'Cost 1pc': request.form.get('cost_1pc'),
+            'Cost 100pc': request.form.get('cost_100pc'),
+            'Cost 1000pc': request.form.get('cost_1000pc'),
+            'Tags': request.form.get('tags'),
+            'Notes': request.form.get('notes'),
+            'Library Ref': request.form.get('library_ref'),
+            'Library Path': request.form.get('library_path'),
+            'Footprint': request.form.get('footprint'),
+            'Footprint Ref': request.form.get('footprint_ref'),
+            'Footprint Path': request.form.get('footprint_path')
+        }
+
+        conn = create_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                INSERT INTO electronics_parts (
+                    `Internal PN`, `Part Description`, Manufacturer, `Manufacturer Part Number`,
+                    `Supplier 1`, `Supplier Part Number 1`, `Part Category`, Updated, Reason,
+                    `RoHS Compliant`, `Part Verified`, `Cost 1pc`, `Cost 100pc`, `Cost 1000pc`,
+                    Tags, Notes, `Library Ref`, `Library Path`, Footprint, `Footprint Ref`, `Footprint Path`
+                ) VALUES (
+                    %(Internal PN)s, %(Part Description)s, %(Manufacturer)s, %(Manufacturer Part Number)s,
+                    %(Supplier 1)s, %(Supplier Part Number 1)s, %(Part Category)s, %(Updated)s, %(Reason)s,
+                    %(RoHS Compliant)s, %(Part Verified)s, %(Cost 1pc)s, %(Cost 100pc)s, %(Cost 1000pc)s,
+                    %(Tags)s, %(Notes)s, %(Library Ref)s, %(Library Path)s, %(Footprint)s,
+                    %(Footprint Ref)s, %(Footprint Path)s
+                )
+            """, form_data)
+            conn.commit()
+            flash('Part added successfully!')
+            return redirect(url_for('manual_add'))
+        except Exception as e:
+            flash(f"Error adding part: {e}")
+        finally:
+            cleanup(cursor, conn)
+
+    return render_template('manual_add.html')
+
+#MANUAL EDIT
+@app.route('/manual_edit', methods=['GET', 'POST'])
+@login_required
+def manual_edit_selector():
+    if session.get('user_type') != 'admin':
+        flash("Access denied: Admins only.")
+        return redirect(url_for('index'))
+
+    conn = create_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    if request.method == 'POST':
+        part_id = request.form.get('part_id')
+        internal_pn = request.form.get('internal_pn')
+        part_description = request.form.get('part_description')
+
+        try:
+            if part_id:
+                cursor.execute("SELECT ID FROM electronics_parts WHERE ID = %s", (part_id,))
+            elif internal_pn:
+                cursor.execute("SELECT ID FROM electronics_parts WHERE `Internal PN` = %s", (internal_pn,))
+            elif part_description:
+                cursor.execute("SELECT ID FROM electronics_parts WHERE `Part Description` = %s", (part_description,))
+            else:
+                flash("Please fill in at least one field.")
+                return redirect(url_for('manual_edit_selector'))
+
+            result = cursor.fetchone()
+            if result:
+                return redirect(url_for('manual_edit', part_id=result['ID']))
+            else:
+                flash("Part not found.")
+
+        except Exception as e:
+            flash(f"Error finding part: {e}")
+        finally:
+            cleanup(cursor, conn)
+
+    else:
+        cursor.execute("SELECT ID, `Internal PN`, `Part Description` FROM electronics_parts")
+        parts = cursor.fetchall()
+        cleanup(cursor, conn)
+
+        return render_template('manual_edit_selector.html', parts=parts)
+
+#MANUAL EDIT REDIRECT
+@app.route('/manual_edit/<int:part_id>', methods=['GET', 'POST'])
+@login_required
+def manual_edit(part_id):
+    if session.get('user_type') != 'admin':
+        flash("Access denied: Admins only.")
+        return redirect(url_for('index'))
+
+    conn = create_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    if request.method == 'POST':
+        updated_data = {
+            'Internal PN': request.form.get('internal_pn'),
+            'Part Description': request.form.get('part_description'),
+            'Manufacturer': request.form.get('manufacturer'),
+            'Manufacturer Part Number': request.form.get('manufacturer_pn'),
+            'Supplier 1': request.form.get('supplier_1'),
+            'Supplier Part Number 1': request.form.get('supplier_pn_1'),
+            'Part Category': request.form.get('part_category'),
+            'Updated': request.form.get('updated'),
+            'Reason': request.form.get('reason'),
+            'RoHS Compliant': request.form.get('rohs_compliant'),
+            'Part Verified': request.form.get('part_verified'),
+            'Cost 1pc': request.form.get('cost_1pc'),
+            'Cost 100pc': request.form.get('cost_100pc'),
+            'Cost 1000pc': request.form.get('cost_1000pc'),
+            'Tags': request.form.get('tags'),
+            'Notes': request.form.get('notes'),
+            'Library Ref': request.form.get('library_ref'),
+            'Library Path': request.form.get('library_path'),
+            'Footprint': request.form.get('footprint'),
+            'Footprint Ref': request.form.get('footprint_ref'),
+            'Footprint Path': request.form.get('footprint_path'),
+            'ID': part_id
+        }
+
+        try:
+            cursor.execute("""
+                UPDATE electronics_parts SET
+                    `Internal PN` = %(Internal PN)s,
+                    `Part Description` = %(Part Description)s,
+                    Manufacturer = %(Manufacturer)s,
+                    `Manufacturer Part Number` = %(Manufacturer Part Number)s,
+                    `Supplier 1` = %(Supplier 1)s,
+                    `Supplier Part Number 1` = %(Supplier Part Number 1)s,
+                    `Part Category` = %(Part Category)s,
+                    Updated = %(Updated)s,
+                    Reason = %(Reason)s,
+                    `RoHS Compliant` = %(RoHS Compliant)s,
+                    `Part Verified` = %(Part Verified)s,
+                    `Cost 1pc` = %(Cost 1pc)s,
+                    `Cost 100pc` = %(Cost 100pc)s,
+                    `Cost 1000pc` = %(Cost 1000pc)s,
+                    Tags = %(Tags)s,
+                    Notes = %(Notes)s,
+                    `Library Ref` = %(Library Ref)s,
+                    `Library Path` = %(Library Path)s,
+                    Footprint = %(Footprint)s,
+                    `Footprint Ref` = %(Footprint Ref)s,
+                    `Footprint Path` = %(Footprint Path)s
+                WHERE ID = %(ID)s
+            """, updated_data)
+            conn.commit()
+            flash("Part updated successfully.")
+            return redirect(url_for('manual_edit', part_id=part_id))
+        except Exception as e:
+            flash(f"Error updating part: {e}")
+        finally:
+            cleanup(cursor, conn)
+
+    else:
+        cursor.execute("SELECT * FROM electronics_parts WHERE ID = %s", (part_id,))
+        part = cursor.fetchone()
+        cleanup(cursor, conn)
+
+        if not part:
+            flash("Part not found.")
+            return redirect(url_for('index'))
+
+        return render_template("manual_edit.html", part=part)
+
 
 #UPDATE
 @app.route('/update', methods=['GET', 'POST'])
