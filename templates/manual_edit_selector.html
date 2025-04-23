@@ -1,0 +1,26 @@
+{% extends "layout.html" %}
+{% block title %}Select Part to Edit{% endblock %}
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Select a Part to Edit</h2>
+    <form method="POST" class="card p-4 shadow-sm rounded">
+
+        <div class="mb-3">
+            <label for="part_id" class="form-label">Search by ID:</label>
+            <input type="number" class="form-control" name="part_id" placeholder="Enter Part ID">
+        </div>
+
+        <div class="mb-3">
+            <label for="internal_pn" class="form-label">Search by Internal PN:</label>
+            <input type="text" class="form-control" name="internal_pn" placeholder="Enter Internal PN">
+        </div>
+
+        <div class="mb-3">
+            <label for="part_description" class="form-label">Search by Part Description:</label>
+            <input type="text" class="form-control" name="part_description" placeholder="Enter Part Description">
+        </div>
+
+        <button type="submit" class="btn btn-primary mt-2">Find & Edit</button>
+    </form>
+</div>
+{% endblock %}

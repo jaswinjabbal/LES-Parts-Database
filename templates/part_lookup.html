@@ -1,0 +1,84 @@
+{% extends "layout.html" %}
+{% block title %}Part Lookup{% endblock %}
+{% block content %}
+
+<div class="container mt-5">
+    <h2 class="mb-4">Lookup a Specific Part</h2>
+    <form method="POST" class="card p-4 shadow-sm rounded mb-5">
+        <label for="search_term" class="form-label">Search by Internal PN, Manufacturer PN, or Description:</label>
+        <input type="text" class="form-control" name="search_term" id="search_term" placeholder="e.g. TPS7A4701RGWR" required>
+        <button type="submit" class="btn btn-primary mt-3">Search</button>
+    </form>
+
+    {% if part %}
+    <div class="card shadow-sm p-4">
+        <h5 class="card-title">🧾 Part Details (ID: {{ part.ID }})</h5>
+
+        <!-- Core Info -->
+        <h6 class="mt-3">📘 Identification</h6>
+        <ul class="list-group list-group-flush mb-3">
+            <li class="list-group-item"><strong>Internal PN:</strong> {{ part['Internal PN'] }}</li>
+            <li class="list-group-item"><strong>Manufacturer PN:</strong> {{ part['Manufacturer Part Number'] }}</li>
+            <li class="list-group-item"><strong>Description:</strong> {{ part['Part Description'] }}</li>
+            <li class="list-group-item"><strong>Manufacturer:</strong> {{ part['Manufacturer'] }}</li>
+            <li class="list-group-item"><strong>Category:</strong> {{ part['Part Category'] }}</li>
+        </ul>
+
+        <!-- Supply Info -->
+        <h6>📦 Supply & Compliance</h6>
+        <ul class="list-group list-group-flush mb-3">
+            <li class="list-group-item"><strong>Supplier 1:</strong> {{ part['Supplier 1'] }}</li>
+            <li class="list-group-item"><strong>Supplier Part Number 1:</strong> {{ part['Supplier Part Number 1'] }}</li>
+            <li class="list-group-item"><strong>RoHS Compliant:</strong> {{ part['RoHS Compliant'] }}</li>
+            <li class="list-group-item"><strong>Part Verified:</strong> {{ part['Part Verified'] }}</li>
+            <li class="list-group-item"><strong>Updated:</strong> {{ part['Updated'] }}</li>
+            <li class="list-group-item"><strong>Reason:</strong> {{ part['Reason'] }}</li>
+        </ul>
+
+        <!-- Pricing -->
+        <h6>💰 Pricing</h6>
+        <ul class="list-group list-group-flush mb-3">
+            <li class="list-group-item"><strong>Cost (1pc):</strong> {{ part['Cost 1pc'] }}</li>
+            <li class="list-group-item"><strong>Cost (100pc):</strong> {{ part['Cost 100pc'] }}</li>
+            <li class="list-group-item"><strong>Cost (1000pc):</strong> {{ part['Cost 1000pc'] }}</li>
+        </ul>
+
+        <!-- Notes & Tags -->
+        <h6>📝 Tags & Notes</h6>
+        <ul class="list-group list-group-flush mb-3">
+            <li class="list-group-item"><strong>Tags:</strong> {{ part['Tags'] }}</li>
+            <li class="list-group-item"><strong>Notes:</strong> {{ part['Notes'] }}</li>
+        </ul>
+
+        <!-- Library & Footprint -->
+        <h6>📁 Library / Footprint</h6>
+        <ul class="list-group list-group-flush mb-3">
+            <li class="list-group-item"><strong>Library Ref:</strong> {{ part['Library Ref'] }}</li>
+            <li class="list-group-item"><strong>Library Path:</strong> {{ part['Library Path'] }}</li>
+            <li class="list-group-item"><strong>Footprint:</strong> {{ part['Footprint'] }}</li>
+            <li class="list-group-item"><strong>Footprint Ref:</strong> {{ part['Footprint Ref'] }}</li>
+            <li class="list-group-item"><strong>Footprint Path:</strong> {{ part['Footprint Path'] }}</li>
+        </ul>
+
+        <!-- Optional -->
+        {% if part['Datasheet Document'] %}
+        <h6>📄 Documents</h6>
+        <ul class="list-group list-group-flush mb-3">
+            <li class="list-group-item"><strong>Datasheet:</strong>
+                <a href="{{ part['Datasheet Document'] }}" target="_blank">View PDF</a>
+            </li>
+        </ul>
+        {% endif %}
+
+        <!-- Edit Button -->
+        <div class="mt-4">
+            <a href="{{ url_for('manual_edit', part_id=part.ID) }}" class="btn btn-warning">✏️ Edit This Part</a>
+        </div>
+    </div>
+
+    {% elif part is not none %}
+    <div class="alert alert-warning mt-4">No matching part found.</div>
+    {% endif %}
+</div>
+
+{% endblock %}

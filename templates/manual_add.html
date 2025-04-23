@@ -1,0 +1,40 @@
+{% extends "layout.html" %}
+{% block title %}Manual Add - Admin Only{% endblock %}
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Add a New Part (Manual Entry)</h2>
+    <form method="POST" class="card p-4 shadow-sm rounded">
+
+        {% for label, name in {
+            'Internal PN': 'internal_pn',
+            'Part Description': 'part_description',
+            'Manufacturer': 'manufacturer',
+            'Manufacturer Part Number': 'manufacturer_pn',
+            'Supplier 1': 'supplier_1',
+            'Supplier Part Number 1': 'supplier_pn_1',
+            'Part Category': 'part_category',
+            'Updated': 'updated',
+            'Reason': 'reason',
+            'RoHS Compliant': 'rohs_compliant',
+            'Part Verified': 'part_verified',
+            'Cost 1pc': 'cost_1pc',
+            'Cost 100pc': 'cost_100pc',
+            'Cost 1000pc': 'cost_1000pc',
+            'Tags': 'tags',
+            'Notes': 'notes',
+            'Library Ref': 'library_ref',
+            'Library Path': 'library_path',
+            'Footprint': 'footprint',
+            'Footprint Ref': 'footprint_ref',
+            'Footprint Path': 'footprint_path'
+        }.items() %}
+        <div class="mb-3">
+            <label for="{{ name }}" class="form-label">{{ label }}</label>
+            <input type="text" class="form-control" id="{{ name }}" name="{{ name }}">
+        </div>
+        {% endfor %}
+
+        <button type="submit" class="btn btn-primary mt-3">Add Part</button>
+    </form>
+</div>
+{% endblock %}
